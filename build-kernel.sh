@@ -25,6 +25,7 @@ if [[ -d "$LINUX_LOCAL" ]]; then
 else
 	git clone "$LINUX_GIT" "$LINUX_DIR"
 fi
+rm -rf "$LINUX_DIR/debian"
 
 if [[ "$LINUX_VER" ]]; then
 	(cd "$LINUX_DIR"; git checkout -b dev "$LINUX_VER")
@@ -68,4 +69,19 @@ dtc -O dtb -i "$DTS_DIR" -S 32768 -o "$DTB_MBL" "$DTB_MBL.tmp"
 #make deb-pkg ARCH=powerpc CROSS_COMPILE=powerpc-linux-gnu- -j8
 #make bindeb-pkg ARCH=powerpc CROSS_COMPILE=powerpc-linux-gnu- -j8
 #
-(cd "$LINUX_DIR"; DPKG_DEB_COMPRESSOR_TYPE=zstd make deb-pkg ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- -j"${PARALLEL}" )
+#(cd "$LINUX_DIR"; DPKG_DEB_COMPRESSOR_TYPE=zstd make deb-pkg ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- -j"${PARALLEL}" )
+# Compila il kernel e i moduli senza packaging Debian
+(cd "$LINUX_DIR"; \
+    make ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- NO_OBJTOOL=1 -j"${PARALLEL}" zImage modules dtbs; \
+)
+
+# Installa gli artefatti del kernel
+cp "$LINUX_DIR/arch/powerpc/boot/zImage" "$KERNEL_OUT/"
+cp "$LINUX_DIR/arch/powerpc/boot/dts/"*.dtb "$KERNEL_OUT/"
+
+# Installa i moduli nel rootfs
+export KBUILD_DEBARCH=disabled
+make -C "$LINUX_DIR" \
+    ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- \
+    modules_install INSTALL_MOD_PATH="$ROOTFS_DIR"
+
