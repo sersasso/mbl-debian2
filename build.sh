@@ -162,7 +162,19 @@ BOOTP="${DEVICE}p${BOOTPARTNO}"
 ROOTP="${DEVICE}p${ROOTPARTNO}"
 
 # Kernel build
-./build-kernel.sh
+#./build-kernel.sh
+
+echo "=== Building kernel with apm82181_mbl_defconfig ==="
+
+# Rimuove eventuale directory debian generata automaticamente
+if [[ -d linux/debian ]]; then
+    echo "Removing auto-generated linux/debian directory"
+    rm -rf linux/debian
+fi
+
+# Costruisce il kernel usando il nuovo defconfig
+./build-kernel.sh || { echo "Kernel build failed"; exit 1; }
+
 
 # Make filesystems
 
