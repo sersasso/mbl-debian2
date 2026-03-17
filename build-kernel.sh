@@ -31,10 +31,21 @@ if [[ "$LINUX_VER" ]]; then
 	(cd "$LINUX_DIR"; git checkout -b dev "$LINUX_VER")
 fi
 
+#if [[ -d "$OURPATH/overlay/kernel/" ]]; then
+#	echo "Applying kernel overlay"
+#	cp -vr "$OURPATH/overlay/kernel/.config" "$OURPATH/overlay/kernel/"* "$LINUX_DIR" || echo bad
+#fi
+
 if [[ -d "$OURPATH/overlay/kernel/" ]]; then
-	echo "Applying kernel overlay"
-	cp -vr "$OURPATH/overlay/kernel/.config" "$OURPATH/overlay/kernel/"* "$LINUX_DIR" || echo bad
+    echo "Applying kernel overlay (without .config)"
+    cp -vr "$OURPATH/overlay/kernel/"* "$LINUX_DIR" || echo bad
 fi
+
+if [[ -d "$OURPATH/overlay/kernel-${LINUX_SV}/" ]]; then
+    echo "Applying kernel overlay (without .config)"
+    cp -vr "$OURPATH/overlay/kernel-${LINUX_SV}/"* "$LINUX_DIR" || echo bad
+fi
+
 
 if [[ -d "$OURPATH/overlay/kernel-${LINUX_SV}/" ]]; then
 	echo "Applying kernel overlay"
@@ -78,6 +89,11 @@ dtc -O dtb -i "$DTS_DIR" -S 32768 -o "$DTB_MBL" "$DTB_MBL.tmp"
 # Installa gli artefatti del kernel
 cp "$LINUX_DIR/arch/powerpc/boot/zImage" "$KERNEL_OUT/"
 cp "$LINUX_DIR/arch/powerpc/boot/dts/"*.dtb "$KERNEL_OUT/"
+echo "Using apm82181_mbl_defconfig"
+(cd "$LINUX_DIR"; \
+    rm -f .config; \
+    make ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- apm82181_mbl_defconfig; \
+)
 
 # Installa i moduli nel rootfs
 export KBUILD_DEBARCH=disabled
