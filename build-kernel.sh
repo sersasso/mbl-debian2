@@ -31,26 +31,16 @@ if [[ "$LINUX_VER" ]]; then
 	(cd "$LINUX_DIR"; git checkout -b dev "$LINUX_VER")
 fi
 
-#if [[ -d "$OURPATH/overlay/kernel/" ]]; then
-#	echo "Applying kernel overlay"
-#	cp -vr "$OURPATH/overlay/kernel/.config" "$OURPATH/overlay/kernel/"* "$LINUX_DIR" || echo bad
-#fi
-
 if [[ -d "$OURPATH/overlay/kernel/" ]]; then
     echo "Applying kernel overlay (without .config)"
     cp -vr "$OURPATH/overlay/kernel/"* "$LINUX_DIR" || echo bad
 fi
 
 if [[ -d "$OURPATH/overlay/kernel-${LINUX_SV}/" ]]; then
-    echo "Applying kernel overlay (without .config)"
+    echo "Applying version-specific kernel overlay (without .config)"
     cp -vr "$OURPATH/overlay/kernel-${LINUX_SV}/"* "$LINUX_DIR" || echo bad
 fi
 
-
-if [[ -d "$OURPATH/overlay/kernel-${LINUX_SV}/" ]]; then
-	echo "Applying kernel overlay"
-	cp -vr "$OURPATH/overlay/kernel-${LINUX_SV}/.config" "$OURPATH/overlay/kernel-${LINUX_SV}/"* "$LINUX_DIR" || echo bad
-fi
 
 if [[ -d "$OURPATH/patches/kernel/" ]]; then
 	for file in "$OURPATH/patches/kernel/"*.patch; do
@@ -74,6 +64,12 @@ cpp -nostdinc -x assembler-with-cpp \
 # The DTB needs to be enlarged as u-boot needs the extra size for adding ranges and frequency properties
 dtc -O dtb -i "$DTS_DIR" -S 32768 -o "$DTB_MBL" "$DTB_MBL.tmp"
 
+echo "Using apm82181_mbl_defconfig"
+(cd "$LINUX_DIR"; \
+    rm -f .config; \
+    make ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- apm82181_mbl_defconfig; \
+)
+
 #(cd $LINUX_DIR; make ARCH="$ARCH" syncconfig;
 #make-kpkg kernel-source kernel-headers kernel-image kernel-debug --revision 1.00 --arch=powerpc --cross-compile powerpc-linux-gnu- )
 #make-kpkg kernel-image --revision 1.00 --arch=powerpc --cross-compile powerpc-linux-gnu- )
@@ -89,11 +85,6 @@ dtc -O dtb -i "$DTS_DIR" -S 32768 -o "$DTB_MBL" "$DTB_MBL.tmp"
 # Installa gli artefatti del kernel
 cp "$LINUX_DIR/arch/powerpc/boot/zImage" "$KERNEL_OUT/"
 cp "$LINUX_DIR/arch/powerpc/boot/dts/"*.dtb "$KERNEL_OUT/"
-echo "Using apm82181_mbl_defconfig"
-(cd "$LINUX_DIR"; \
-    rm -f .config; \
-    make ARCH="$ARCH" CROSS_COMPILE=powerpc-linux-gnu- apm82181_mbl_defconfig; \
-)
 
 # Installa i moduli nel rootfs
 export KBUILD_DEBARCH=disabled
